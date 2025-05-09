@@ -1,3 +1,6 @@
+# ignore prisma generated files
+generated/prisma
+
 # Logs
 logs
 *.log
