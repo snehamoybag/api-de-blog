@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int    @id @default(autoincrement())
+  email        String @unique
+  passwordHash String
+  role         Role   @default(USER)
+
+  profile Profile?
+
+  @@index([email])
+}
+
+model Profile {
+  id        Int     @id @default(autoincrement())
+  firstName String? @db.VarChar(35)
+  lastName  String? @db.VarChar(35)
+  dpUrl     String?
+  bio       String  @db.VarChar(255)
+
+  user   User @relation(fields: [userId], references: [id])
+  userId Int  @unique
+
+  writtenBlogs Blog[] @relation(name: "blogAuthor")
+
+  likedBlogs Blog[] @relation(name: "likedBlog")
+
+  writtenComments Comment[] @relation(name: "commentor")
+
+  likedComments Comment[] @relation(name: "likedComment")
+}
+
+model Blog {
+  id      Int    @id @default(autoincrement())
+  title   String @db.VarChar(128)
+  content String
+
+  author    Profile @relation(name: "blogAuthor", fields: [profileId], references: [id])
+  profileId Int
+
+  images   BlogImage[]
+  comments Comment[]
+
+  likedBy   Profile? @relation(name: "likedBlog", fields: [likedById], references: [id])
+  likedById Int?
+}
+
+model BlogImage {
+  id  Int    @id @default(autoincrement())
+  url String
+
+  blog   Blog @relation(fields: [blogId], references: [id])
+  blogId Int
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  message   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime?
+
+  blog   Blog @relation(fields: [blogId], references: [id])
+  blogId Int
+
+  commentor   Profile @relation(name: "commentor", fields: [commentorId], references: [id])
+  commentorId Int
+
+  parentComment Comment?  @relation(name: "replies", fields: [replyId], references: [id])
+  replyId       Int?
+  replies       Comment[] @relation(name: "replies")
+
+  likedBy   Profile? @relation(name: "likedComment", fields: [likedById], references: [id])
+  likedById Int?
+}
+
+enum Role {
+  USER
+  MOD
+  ADMIN
+}
